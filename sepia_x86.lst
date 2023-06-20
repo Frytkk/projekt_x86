@@ -1,0 +1,118 @@
+     1                                      global sepia
+     2                                      section .text
+     3                                  
+     4                                  sepia:
+     5                                      ; prologue
+     6                                      ; [ebp-4] -> end of image pointer
+     7 00000000 55                          push ebp
+     8 00000001 89E5                        mov ebp, esp
+     9 00000003 83EC04                      sub esp, 4
+    10                                  
+    11 00000006 53                          push ebx
+    12 00000007 56                          push esi
+    13 00000008 57                          push edi
+    14                                  
+    15                                      ; calculate end pointer of array: width*height*3
+    16 00000009 8B450C                      mov eax, [ebp+12]
+    17 0000000C 8B5510                      mov edx, [ebp+16]
+    18 0000000F F7E2                        mul edx
+    19 00000011 BA03000000                  mov edx, 3
+    20 00000016 F7E2                        mul edx
+    21                                  
+    22 00000018 8B5508                      mov edx, [ebp+8]
+    23 0000001B 01C2                        add edx, eax
+    24 0000001D 8955FC                      mov [ebp-4], edx
+    25                                  
+    26                                      ; ecx -> image iterator
+    27 00000020 8B4D08                      mov ecx, [ebp+8]
+    28                                  
+    29                                  sepiaLoop:
+    30                                      ; load colors to registers:
+    31                                      ; edi -> blue
+    32                                      ; ebx -> green
+    33                                      ; esi -> red
+    34 00000023 0FB639                      movzx edi, byte [ecx]
+    35 00000026 0FB65901                    movzx ebx, byte [ecx+1]
+    36 0000002A 0FB67102                    movzx esi, byte [ecx+2]
+    37                                  
+    38                                      ; calculate new blue component
+    39                                      ; new_blue = (red*272)/1024 + (green*534)/1024 + (blue*131)/1024
+    40 0000002E 89F0                        mov eax, esi
+    41 00000030 69C010010000                imul eax, 272
+    42 00000036 C1E80A                      shr eax, 10
+    43 00000039 89C2                        mov edx, eax
+    44                                  
+    45 0000003B 89D8                        mov eax, ebx
+    46 0000003D 69C016020000                imul eax, 534
+    47 00000043 C1E80A                      shr eax, 10
+    48 00000046 01C2                        add edx, eax
+    49                                  
+    50 00000048 89F8                        mov eax, edi
+    51 0000004A 69C083000000                imul eax, 131
+    52 00000050 C1E80A                      shr eax, 10
+    53 00000053 01C2                        add edx, eax
+    54                                  
+    55 00000055 B8FF000000                  mov eax, 255
+    56 0000005A 39C2                        cmp edx, eax
+    57 0000005C 0F47D0                      cmova edx, eax
+    58 0000005F 8811                        mov byte [ecx], dl
+    59 00000061 41                          inc ecx
+    60                                  
+    61                                      ; calculate new green component
+    62                                      ; new_green = (red*349)/1024 + (green*686)/1024 + (blue*168)/1024
+    63 00000062 89F0                        mov eax, esi
+    64 00000064 69C05D010000                imul eax, 349
+    65 0000006A C1E80A                      shr eax, 10
+    66 0000006D 89C2                        mov edx, eax
+    67                                  
+    68 0000006F 89D8                        mov eax, ebx
+    69 00000071 69C0AE020000                imul eax, 686
+    70 00000077 C1E80A                      shr eax, 10
+    71 0000007A 01C2                        add edx, eax
+    72                                  
+    73 0000007C 89F8                        mov eax, edi
+    74 0000007E 69C0A8000000                imul eax, 168
+    75 00000084 C1E80A                      shr eax, 10
+    76 00000087 01C2                        add edx, eax
+    77                                  
+    78 00000089 B8FF000000                  mov eax, 255
+    79 0000008E 39C2                        cmp edx, eax
+    80 00000090 0F47D0                      cmova edx, eax
+    81 00000093 8811                        mov byte [ecx], dl
+    82 00000095 41                          inc ecx
+    83                                  
+    84                                      ; calculate new red component
+    85                                      ; new_red = (red*393)/1024 + (green*769)/1024 + (blue*189)/1024
+    86 00000096 89F0                        mov eax, esi
+    87 00000098 69C089010000                imul eax, 393
+    88 0000009E C1E80A                      shr eax, 10
+    89 000000A1 89C2                        mov edx, eax
+    90                                  
+    91 000000A3 89D8                        mov eax, ebx
+    92 000000A5 69C001030000                imul eax, 769
+    93 000000AB C1E80A                      shr eax, 10
+    94 000000AE 01C2                        add edx, eax
+    95                                  
+    96 000000B0 89F8                        mov eax, edi
+    97 000000B2 69C0BD000000                imul eax, 189
+    98 000000B8 C1E80A                      shr eax, 10
+    99 000000BB 01C2                        add edx, eax
+   100                                  
+   101 000000BD B8FF000000                  mov eax, 255
+   102 000000C2 39C2                        cmp edx, eax
+   103 000000C4 0F47D0                      cmova edx, eax
+   104 000000C7 8811                        mov byte [ecx], dl
+   105 000000C9 41                          inc ecx
+   106                                  
+   107                                      ; loop condition
+   108 000000CA 3B4DFC                      cmp ecx, [ebp-4]
+   109 000000CD 0F8250FFFFFF                jb sepiaLoop
+   110                                  
+   111                                      ; epilogue
+   112 000000D3 5F                          pop edi
+   113 000000D4 5E                          pop esi
+   114 000000D5 5B                          pop ebx
+   115                                  
+   116 000000D6 89EC                        mov esp, ebp
+   117 000000D8 5D                          pop ebp
+   118 000000D9 C3                          ret
